@@ -1,0 +1,59 @@
+DATA:
+  data_name: s3dis
+  # local macbook
+  # data_root: /Users/aibee/Downloads/Paper/Point Cloud/3D Semantic Segmentation/Dataset/s3dis
+  # office
+  data_root: /home/antenna/Downloads/Dataset/s3dis
+  train_list: list/train12346.txt
+  train_full_folder: trainval_fullarea
+  val_list: list/val5.txt
+  test_area: 5
+  classes: 13
+  fea_dim: 9  # point feature dimension: centered xyz + rgb + normalized points
+  block_size: 1.0
+  stride_rate: 0.5
+  sample_rate: 1.0
+  num_point: 4096  # point number [default: 4096]
+
+  # --- ADD  --- from transformer
+  voxel_size: 0.04
+  voxel_max: 80000  # number of grids
+
+TRAIN:
+  arch: pointNN
+  use_xyz: True
+  sync_bn: True  # adopt sync_bn or not
+  ignore_label: 255
+  train_gpu: [0]
+  train_workers: 8  # data loader workers
+  train_batch_size: 8  # batch size for training
+  train_batch_size_val: 2  # batch size for validation during training, memory and speed tradeoff
+  base_lr: 0.0005
+  epochs: 100
+  start_epoch: 0
+  step_epoch: 30
+  multiplier: 0.1
+  momentum: 0.9
+  weight_decay: 0.0001
+  manual_seed: 123
+  print_freq: 100  # log per 10 batch
+  save_freq: 1
+  save_path: checkpoints
+  train_log: checkpoints/train.log
+  train_tensorboard_path: checkpoints/tb_train
+  weight:  # path to initial weight (default: none)
+  resume: train_epoch_12_loss_3673.033.pth # path to latest checkpoint (default: none)
+  evaluate: True  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend
+
+TEST:
+  test_list: list/val5.txt
+  test_list_full: list/val5_full.txt
+  split: val  # split in [train, val and test]
+  test_gpu: [0]
+  test_workers: 2
+  test_batch_size: 2
+  model_path: checkpoints  # checkpoints root path
+#  save_folder: exp/s3dis/pointweb/result/epoch_100/val5_0.5  # metric results save folder
+  names_path: list/s3dis_names.txt
+  test_log: checkpoints/test.log
+  test_tensorboard_path: checkpoints/tb_test
