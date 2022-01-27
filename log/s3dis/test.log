@@ -1,0 +1,125 @@
+[2022-01-21 15:58:57,978][test_transformer_simple.py][line:226][INFO] arch: pointNN
+base_lr: 0.0005
+block_size: 1.0
+classes: 13
+data_name: s3dis
+data_root: /data0/texture_data/yaohualiu/PublicDataset/s3dis
+epochs: 100
+evaluate: True
+fea_dim: 6
+ignore_label: 255
+is_restart: 1
+log_root: /Code/PycharmProjects/pythonProject/3DSemantic/ANTennaSeg3D/log/s3dis
+manual_seed: 123
+model_path: checkpoints
+momentum: 0.9
+multiplier: 0.1
+names_path: list/s3dis_names.txt
+num_point: 10000
+pcd_save_path: pred_pcd
+print_freq: 100
+resume: None
+sample_rate: 1.0
+save_freq: 1
+save_path: checkpoints
+selected_epoch: 36
+split: val
+start_epoch: 0
+step_epoch: 30
+stride_rate: 0.5
+sync_bn: True
+test_area: 5
+test_batch_size: 1
+test_gpu: [1]
+test_list: list/val5.txt
+test_list_full: list/val5_full.txt
+test_log: test.log
+test_tensorboard_path: tb_test
+test_workers: 1
+train_batch_size: 1
+train_batch_size_val: 1
+train_full_folder: trainval_fullarea
+train_gpu: [0, 1]
+train_list: list/train12346.txt
+train_log: train.log
+train_tensorboard_path: tb_train
+train_workers: 1
+use_xyz: True
+val_list: list/val5.txt
+voxel_max: 0
+voxel_size: 0
+weight: None
+weight_decay: 0.0001
+writer_root: /Code/PycharmProjects/pythonProject/3DSemantic/ANTennaSeg3D/writer/s3dis
+[2022-01-21 15:58:57,981][test_transformer_simple.py][line:229][INFO] Classes: 13
+[2022-01-21 15:58:58,011][test_transformer_simple.py][line:264][INFO] => Creating model ...
+[2022-01-21 15:58:58,021][test_transformer_simple.py][line:267][INFO] model: 
+
+[2022-01-21 15:59:03,125][test_transformer_simple.py][line:283][INFO] => loading weight '/data0/texture_data/yaohualiu/PublicDataset/s3dis/checkpoints/train_epoch_36_loss_30359.209.pth'
+[2022-01-21 15:59:03,133][test_transformer_simple.py][line:286][INFO] => loaded weight '/data0/texture_data/yaohualiu/PublicDataset/s3dis/checkpoints/train_epoch_36_loss_30359.209.pth'
+[2022-01-21 15:59:03,133][test_transformer_simple.py][line:37][INFO] >>>>>>>>>>>>>>>> Start Evaluation >>>>>>>>>>>>>>>>
+[2022-01-21 15:59:03,544][test_transformer_simple.py][line:145][INFO] Test:[1/68] | Scene:Area_5_WC_1 | NumPoints:719348 | Time:0.4089s | Loss:2.25371 | Acc:0.29118 | mIoU:0.09861 | mAcc:0.13315.
+[2022-01-21 16:00:34,097][test_transformer_simple.py][line:204][INFO] Class_0 | Name: ceiling | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:00:34,097][test_transformer_simple.py][line:204][INFO] Class_1 | Name: floor | Result: IoU:0.9647 | Accuracy:1.0000.
+[2022-01-21 16:00:34,097][test_transformer_simple.py][line:204][INFO] Class_2 | Name: wall | Result: IoU:0.0218 | Accuracy:0.0224.
+[2022-01-21 16:00:34,098][test_transformer_simple.py][line:204][INFO] Class_3 | Name: beam | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:00:34,098][test_transformer_simple.py][line:204][INFO] Class_4 | Name: column | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:00:34,099][test_transformer_simple.py][line:204][INFO] Class_5 | Name: window | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:00:34,099][test_transformer_simple.py][line:204][INFO] Class_6 | Name: door | Result: IoU:0.0565 | Accuracy:0.3302.
+[2022-01-21 16:00:34,100][test_transformer_simple.py][line:204][INFO] Class_7 | Name: chair | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:00:34,100][test_transformer_simple.py][line:204][INFO] Class_8 | Name: table | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:00:34,101][test_transformer_simple.py][line:204][INFO] Class_9 | Name: bookcase | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:00:34,101][test_transformer_simple.py][line:204][INFO] Class_10 | Name: sofa | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:00:34,102][test_transformer_simple.py][line:204][INFO] Class_11 | Name: board | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:00:34,102][test_transformer_simple.py][line:204][INFO] Class_12 | Name: clutter | Result: IoU:0.2389 | Accuracy:0.3784.
+[2022-01-21 16:00:34,103][test_transformer_simple.py][line:208][INFO] Val1 result: mIoU:0.0986 | mAcc:0.1332 | allAcc:0.2912.
+[2022-01-21 16:00:34,103][test_transformer_simple.py][line:209][INFO] <<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<
+[2022-01-21 16:00:34,550][test_transformer_simple.py][line:145][INFO] Test:[2/68] | Scene:Area_5_WC_2 | NumPoints:640250 | Time:0.4460s | Loss:2.29624 | Acc:0.24795 | mIoU:0.09152 | mAcc:0.11368.
+[2022-01-21 16:04:29,013][test_transformer_simple.py][line:204][INFO] Class_0 | Name: ceiling | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:04:29,014][test_transformer_simple.py][line:204][INFO] Class_1 | Name: floor | Result: IoU:0.9662 | Accuracy:1.0000.
+[2022-01-21 16:04:29,014][test_transformer_simple.py][line:204][INFO] Class_2 | Name: wall | Result: IoU:0.0252 | Accuracy:0.0259.
+[2022-01-21 16:04:29,014][test_transformer_simple.py][line:204][INFO] Class_3 | Name: beam | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:04:29,015][test_transformer_simple.py][line:204][INFO] Class_4 | Name: column | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:04:29,015][test_transformer_simple.py][line:204][INFO] Class_5 | Name: window | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:04:29,016][test_transformer_simple.py][line:204][INFO] Class_6 | Name: door | Result: IoU:0.0445 | Accuracy:0.2606.
+[2022-01-21 16:04:29,016][test_transformer_simple.py][line:204][INFO] Class_7 | Name: chair | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:04:29,017][test_transformer_simple.py][line:204][INFO] Class_8 | Name: table | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:04:29,017][test_transformer_simple.py][line:204][INFO] Class_9 | Name: bookcase | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:04:29,018][test_transformer_simple.py][line:204][INFO] Class_10 | Name: sofa | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:04:29,018][test_transformer_simple.py][line:204][INFO] Class_11 | Name: board | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:04:29,019][test_transformer_simple.py][line:204][INFO] Class_12 | Name: clutter | Result: IoU:0.2004 | Accuracy:0.3206.
+[2022-01-21 16:04:29,020][test_transformer_simple.py][line:208][INFO] Val1 result: mIoU:0.0951 | mAcc:0.1236 | allAcc:0.2708.
+[2022-01-21 16:04:29,020][test_transformer_simple.py][line:209][INFO] <<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<
+[2022-01-21 16:04:29,636][test_transformer_simple.py][line:145][INFO] Test:[3/68] | Scene:Area_5_conferenceRoom_1 | NumPoints:1047554 | Time:0.6148s | Loss:2.22854 | Acc:0.42992 | mIoU:0.19066 | mAcc:0.29429.
+[2022-01-21 16:05:15,547][test_transformer_simple.py][line:204][INFO] Class_0 | Name: ceiling | Result: IoU:0.3107 | Accuracy:0.3561.
+[2022-01-21 16:05:15,548][test_transformer_simple.py][line:204][INFO] Class_1 | Name: floor | Result: IoU:0.9670 | Accuracy:0.9993.
+[2022-01-21 16:05:15,548][test_transformer_simple.py][line:204][INFO] Class_2 | Name: wall | Result: IoU:0.0695 | Accuracy:0.0718.
+[2022-01-21 16:05:15,549][test_transformer_simple.py][line:204][INFO] Class_3 | Name: beam | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:05:15,550][test_transformer_simple.py][line:204][INFO] Class_4 | Name: column | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:05:15,550][test_transformer_simple.py][line:204][INFO] Class_5 | Name: window | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:05:15,551][test_transformer_simple.py][line:204][INFO] Class_6 | Name: door | Result: IoU:0.0635 | Accuracy:0.3505.
+[2022-01-21 16:05:15,551][test_transformer_simple.py][line:204][INFO] Class_7 | Name: chair | Result: IoU:0.2245 | Accuracy:0.5433.
+[2022-01-21 16:05:15,552][test_transformer_simple.py][line:204][INFO] Class_8 | Name: table | Result: IoU:0.0644 | Accuracy:0.2935.
+[2022-01-21 16:05:15,553][test_transformer_simple.py][line:204][INFO] Class_9 | Name: bookcase | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:05:15,553][test_transformer_simple.py][line:204][INFO] Class_10 | Name: sofa | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:05:15,553][test_transformer_simple.py][line:204][INFO] Class_11 | Name: board | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:05:15,554][test_transformer_simple.py][line:204][INFO] Class_12 | Name: clutter | Result: IoU:0.1666 | Accuracy:0.3232.
+[2022-01-21 16:05:15,554][test_transformer_simple.py][line:208][INFO] Val1 result: mIoU:0.1436 | mAcc:0.2260 | allAcc:0.3401.
+[2022-01-21 16:05:15,554][test_transformer_simple.py][line:209][INFO] <<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<
+[2022-01-21 16:05:16,779][test_transformer_simple.py][line:145][INFO] Test:[4/68] | Scene:Area_5_conferenceRoom_2 | NumPoints:1922357 | Time:1.2237s | Loss:2.57286 | Acc:0.34029 | mIoU:0.12081 | mAcc:0.22245.
+[2022-01-21 16:08:19,965][test_transformer_simple.py][line:204][INFO] Class_0 | Name: ceiling | Result: IoU:0.3030 | Accuracy:0.4269.
+[2022-01-21 16:08:19,966][test_transformer_simple.py][line:204][INFO] Class_1 | Name: floor | Result: IoU:0.9261 | Accuracy:0.9718.
+[2022-01-21 16:08:19,966][test_transformer_simple.py][line:204][INFO] Class_2 | Name: wall | Result: IoU:0.0846 | Accuracy:0.0914.
+[2022-01-21 16:08:19,967][test_transformer_simple.py][line:204][INFO] Class_3 | Name: beam | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:08:19,967][test_transformer_simple.py][line:204][INFO] Class_4 | Name: column | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:08:19,968][test_transformer_simple.py][line:204][INFO] Class_5 | Name: window | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:08:19,968][test_transformer_simple.py][line:204][INFO] Class_6 | Name: door | Result: IoU:0.0534 | Accuracy:0.3499.
+[2022-01-21 16:08:19,968][test_transformer_simple.py][line:204][INFO] Class_7 | Name: chair | Result: IoU:0.0840 | Accuracy:0.1326.
+[2022-01-21 16:08:19,968][test_transformer_simple.py][line:204][INFO] Class_8 | Name: table | Result: IoU:0.1080 | Accuracy:0.3849.
+[2022-01-21 16:08:19,968][test_transformer_simple.py][line:204][INFO] Class_9 | Name: bookcase | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:08:19,969][test_transformer_simple.py][line:204][INFO] Class_10 | Name: sofa | Result: IoU:0.0160 | Accuracy:0.2805.
+[2022-01-21 16:08:19,970][test_transformer_simple.py][line:204][INFO] Class_11 | Name: board | Result: IoU:0.0000 | Accuracy:0.0000.
+[2022-01-21 16:08:19,970][test_transformer_simple.py][line:204][INFO] Class_12 | Name: clutter | Result: IoU:0.1247 | Accuracy:0.2706.
+[2022-01-21 16:08:19,971][test_transformer_simple.py][line:208][INFO] Val1 result: mIoU:0.1308 | mAcc:0.2237 | allAcc:0.3402.
+[2022-01-21 16:08:19,971][test_transformer_simple.py][line:209][INFO] <<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<
+[2022-01-21 16:08:20,872][test_transformer_simple.py][line:145][INFO] Test:[5/68] | Scene:Area_5_conferenceRoom_3 | NumPoints:1507439 | Time:0.9001s | Loss:1.70420 | Acc:0.51774 | mIoU:0.19678 | mAcc:0.23835.

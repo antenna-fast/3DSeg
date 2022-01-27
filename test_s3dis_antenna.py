@@ -15,7 +15,7 @@ import torch.utils.data
 from torch.utils.tensorboard import SummaryWriter
 
 sys.path.insert(0, os.getcwd() + '/..')
-from utils import config
+# from utils import config
 from utils.util import AverageMeter, intersectionAndUnion, check_makedirs, get_parser
 from utils.logger_utils import create_logger
 
@@ -170,6 +170,7 @@ def test(model, criterion, names):
         pred = np.argmax(pred, axis=1)
         '''
         pred = np.zeros((gt.size, args.classes))
+
         for j in range(len(index_room)):
             pred[index_room[j]] += output_room[j]
         pred = np.argmax(pred, axis=1)
@@ -222,7 +223,7 @@ if __name__ == '__main__':
     # LOGGER
     logger = create_logger(log_file_path='')
     logger.info(args)
-    writer = SummaryWriter(log_dir='')
+    # writer = SummaryWriter(log_dir='')
 
     assert args.classes > 1
     logger.info("=> creating model ...")

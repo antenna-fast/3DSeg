@@ -1,6 +1,8 @@
 """
 from point transformer
 Simplified by ANTenna
+
+Test: 3D Semantic Segmentation
 """
 
 import os
@@ -10,21 +12,32 @@ import random
 import numpy as np
 # import pickle
 # import collections
+import shutil
 
 import torch
 import torch.nn as nn
 import torch.nn.parallel
 import torch.optim
 import torch.utils.data
+from torch.utils.tensorboard import SummaryWriter
 
+sys.path.insert(0, os.getcwd())
 from utils.metric_utils import AverageMeter, intersectionAndUnion
 from utils.logger_utils import create_logger
 from utils.config import get_parser
 from utils.data_utils import get_data_list, input_normalize, data_load
 
+from utils.vis_utils import show_inference
+import matplotlib.pyplot as plt
+from matplotlib import cm
+color_map = cm.get_cmap('tab20').colors
 
-def test(model, criterion, names, is_vis=0):
+
+def test(model, criterion, writer, args=0):
     logger.info('>>>>>>>>>>>>>>>> Start Evaluation >>>>>>>>>>>>>>>>')
+
+    names = [line.rstrip('\n') for line in open(os.path.join(args.data_root, args.names_path))]  # part names 
+
     # Init Metric Buffer
     batch_time = AverageMeter()
     intersection_meter = AverageMeter()
@@ -38,20 +51,26 @@ def test(model, criterion, names, is_vis=0):
     pred_save, label_save = [], []
     data_list = get_data_list(args)  # get test data list
     num_data_list = len(data_list)
+
+    # Test on all data
     for idx, data_name in enumerate(data_list):  # file name
         start_time = time.time()
+        # Load data
         data_path = os.path.join(args.data_root, args.train_full_folder, data_name + '.npy')
+        
+        # When loading, split the whole scene into several parts 
+        # coord: Nx3 xyz
+        # feat: Nx3 rgb
+        # label: N, 
+        # idx_data: [[part_1], [part_2], ...]
+        coord, feat, label, idx_data = data_load(data_path, args)  
 
-        args.voxel_size = 0  # do NOT use voxelize when load test data
-        coord, feat, label, idx_data = data_load(data_path, args)  # idx_data: [[part_1], [part_2], ...]
-        # Init predict results of the current whole scene point cloud
+        # Init predict results of the current scene point cloud
         pred = torch.zeros((label.size, args.classes)).cuda()  # N x classes
         idx_list, coord_list, feat_list, offset_list = [], [], [], []
-
-        idx_size = len(idx_data)
         for i, idx_part in enumerate(idx_data):  # for each Part
-            coord_part, feat_part = coord[idx_part], feat[idx_part]  # xyz, rgb
-            # Split to reduce mem-cost
+            coord_part, feat_part = coord[idx_part], feat[idx_part] 
+            # Split to reduce memory cost
             if args.voxel_max and coord_part.shape[0] > args.voxel_max:
                 coord_p = np.random.rand(coord_part.shape[0]) * 1e-3
                 idx_uni = np.array([])
@@ -73,7 +92,7 @@ def test(model, criterion, names, is_vis=0):
                     offset_list.append(idx_sub.size)
 
                     idx_uni = np.unique(np.concatenate((idx_uni, idx_sub)))
-            else:  # Inference all points at once
+            else:  # Directly Inference Overall scene points 
                 coord_part, feat_part = input_normalize(coord_part, feat_part)
                 idx_list.append(idx_part)
                 coord_list.append(coord_part)
@@ -82,124 +101,201 @@ def test(model, criterion, names, is_vis=0):
         # Parse to mini-Batch Inference: 把一个完整的点云拆分为batch size
         batch_num = int(np.ceil(len(idx_list) / args.batch_size_test))  # 向上取整
         for i in range(batch_num):  # to batch processing
+            print('processing batch: {}'.format(i))
             s_i, e_i = i * args.batch_size_test, min((i + 1) * args.batch_size_test, len(idx_list))
+            
+            # Cut out current "batch" (part)
             idx_part = idx_list[s_i:e_i]
             coord_part = coord_list[s_i:e_i]
             feat_part = feat_list[s_i:e_i]
             offset_part = offset_list[s_i:e_i]
             idx_part = np.concatenate(idx_part)  # 2D list to 1D index vector
+            
+            # To Tensor
             coord_part = torch.FloatTensor(np.concatenate(coord_part)).cuda(non_blocking=True)
             feat_part = torch.FloatTensor(np.concatenate(feat_part)).cuda(non_blocking=True)
-            offset_part = torch.IntTensor(np.cumsum(offset_part)).cuda(non_blocking=True)
+            # offset_part = torch.IntTensor(np.cumsum(offset_part)).cuda(non_blocking=True)
 
             with torch.no_grad():
-                # pred_part = model([coord_part, feat_part, offset_part])  # (n, k)
-                pred_part = model([coord_part, feat_part, feat_part])  # (n, k)
+                x = torch.concat([coord_part, feat_part][:100], -1).unsqueeze(0)  # [batch, N, dim]
+                pred_part = model(x)  # (n, k)
             torch.cuda.empty_cache()
-            pred[idx_part, :] += pred_part  # Accumulate all parts' inference result
+            pred[idx_part, :] += pred_part  # Stack all parts' inference result
 
-        # Sample level metric
         loss = criterion(pred, torch.LongTensor(label).cuda(non_blocking=True))  # for reference
-        pred = pred.max(1)[1].data.cpu().numpy()  # Get predicted class index by argmax (top 1)
+        pred = pred.max(1)[1].data.cpu().numpy()  # Get predicted result by argmax 
 
-        # Metric: Each scene, Class Level metric
+        # Scene Level Metric
         intersection, union, target = intersectionAndUnion(pred, label, args.classes, args.ignore_label)
         accuracy = sum(intersection) / (sum(target) + 1e-10)
+        mIoU_test_scene = np.mean(intersection / (union + 1e-10))
+        mAcc_test_scene = np.mean(intersection / (target + 1e-10))
 
-        # Update metric buffer in class level
+        # Update metric buffer in Class level
         intersection_meter.update(intersection)
         union_meter.update(union)
         target_meter.update(target)
         batch_time.update(time.time() - start_time)
 
-        # Scene Level Metric
-        logger.info('Test:[{}/{}] | NumPoints:{} | BatchTime:{batch_time.val:.3f}s | Accuracy {accuracy:.4f}.'.
-                    format(idx + 1, num_data_list, label.size, batch_time=batch_time, accuracy=accuracy))
-        pred_save.append(pred)
+        # Scene Level Log
+        log_idx = idx + 1
+        test_loss = loss.item()
+        logger.info('Test:[{}/{}] | Scene:{} | NumPoints:{} | Time:{batch_time:.4f}s | '
+                    'Loss:{loss:.5f} | Acc:{acc:.5f} | mIoU:{miou:.5f} | mAcc:{macc:.5f}.'.
+                    format(log_idx, num_data_list, data_name, label.size, batch_time=batch_time.val,
+                           loss=test_loss, acc=accuracy, miou=mIoU_test_scene, macc=mAcc_test_scene))
+        # For Overall Metric        
+        pred_save.append(pred)  
         label_save.append(label)
         # np.save(pred_save_path, pred)
         # np.save(label_save_path, label)
 
-    # Save all scenes' prediction results
-    # with open(os.path.join(args.save_folder, "pred.pickle"), 'wb') as handle:
-    #     pickle.dump({'pred': pred_save}, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    # with open(os.path.join(args.save_folder, "label.pickle"), 'wb') as handle:
-    #     pickle.dump({'label': label_save}, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        if args.is_vis:
+            # Visualize Labeled Point Cloud  
+            color_list_gt = []
+            color_list_pred = []  # time consuming... can replace with  map function
+            for c in label:
+                color_list_gt.append(np.array(color_map[int(c)]) * 255)
+            for c in pred:
+                color_list_pred.append(np.array(color_map[int(c)]) * 255)
+            color_pred_np = np.array(color_list_pred)
+            color_gt_np = np.array(color_list_gt)
+            tb_color_gt = torch.tensor(color_gt_np, dtype=torch.int).unsqueeze(0)
+            tb_color_pred = torch.tensor(color_pred_np, dtype=torch.int).unsqueeze(0)
 
-    # Overall Metric
-    # Calculation 1  Overall Test set Class Level metric
-    iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
-    accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
-    mIoU1 = np.mean(iou_class)
-    mAcc1 = np.mean(accuracy_class)
-    allAcc1 = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
+            # Show on tensorboard
+            # writer.add_mesh(tag='TestVisPointsGT', vertices=torch.from_numpy(coord).unsqueeze(0), colors=tb_color_gt, global_step=idx)
+            # writer.add_mesh(tag='TestVisPointsPred', vertices=torch.from_numpy(coord).unsqueeze(0), colors=tb_color_pred, global_step=idx)
+            
+            # Save Labeled Point Cloud
+            pcd_save_root = os.path.join(args.save_root, args.pcd_save_path, args.arch)
+            show_inference(coord, color_pred_np, is_show=0, is_save=1, is_norm=1, save_path=os.path.join(pcd_save_root, 'pred_scene_{}.ply'.format(idx)))
+            show_inference(coord, color_gt_np, is_show=0, is_save=1, is_norm=1, save_path=os.path.join(pcd_save_root, 'gt_scene_{}.ply'.format(idx))) 
 
-    # Calculation 2  Overall Test set Class Level metric
-    intersection, union, target = intersectionAndUnion(np.concatenate(pred_save), np.concatenate(label_save), args.classes, args.ignore_label)
-    iou_class = intersection / (union + 1e-10)
-    accuracy_class = intersection / (target + 1e-10)
-    mIoU = np.mean(iou_class)
-    mAcc = np.mean(accuracy_class)
-    allAcc = sum(intersection) / (sum(target) + 1e-10)
+        # Save all scenes' prediction results
+        # with open(os.path.join(args.save_folder, "pred.pickle"), 'wb') as handle:
+        #     pickle.dump({'pred': pred_save}, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # with open(os.path.join(args.save_folder, "label.pickle"), 'wb') as handle:
+        #     pickle.dump({'label': label_save}, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    logger.info('Val0 result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU, mAcc, allAcc))
-    logger.info('Val1 result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU1, mAcc1, allAcc1))
+        # Overall Metric
+        # Calculation 1  
+        # Class Level 
+        iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
+        accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
+        # Overall mean
+        mIoU1 = np.mean(iou_class)
+        mAcc1 = np.mean(accuracy_class)
+        allAcc1 = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
 
-    for i in range(args.classes):
-        logger.info('Class_{} Result: iou/accuracy {:.4f}/{:.4f}, name: {}.'.
-                    format(i, iou_class[i], accuracy_class[i], names[i]))
-    logger.info('<<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<')
+        # Calculation 2  Overall Test set 
+        # # Class Level 
+        # intersection, union, target = intersectionAndUnion(np.concatenate(pred_save), np.concatenate(label_save), args.classes, args.ignore_label)
+        # iou_class = intersection / (union + 1e-10)
+        # accuracy_class = intersection / (target + 1e-10)
+        # # Overall mean
+        # mIoU = np.mean(iou_class)
+        # mAcc = np.mean(accuracy_class)
+        # allAcc = sum(intersection) / (sum(target) + 1e-10)
+        
+        # Class Level Metric Log
+        for i in range(args.classes):
+            logger.info('Class_{} | Name: {} | Result: IoU:{:.4f} | Accuracy:{:.4f}.'.
+                        format(i, names[i], iou_class[i], accuracy_class[i]))
+
+        # Overall Metric Log
+        # logger.info('Val0 result: mIoU:{:.4f} | mAcc:{:.4f} | allAcc:{:.4f}.'.format(mIoU, mAcc, allAcc))
+        logger.info('Val1 result: mIoU:{:.4f} | mAcc:{:.4f} | allAcc:{:.4f}.'.format(mIoU1, mAcc1, allAcc1))
+        logger.info('<<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<')
 
 
 if __name__ == '__main__':
     # Load Config
     code_root = '/'.join(os.path.abspath(__file__).split('/')[:-1])
-    config_file_path = os.path.join(code_root, 'config/s3dis/s3dis_antenna.yaml')  # YAML config file
+    # config_file_path = os.path.join(code_root, 'config/s3dis/s3dis_antenna.yaml')  # YAML config file
+    config_file_path = os.path.join(code_root, 'config/s3dis/s3dis_antenna_graph.yaml')  # YAML config file
     args = get_parser(desc='ANTenna3DSeg', config_file=config_file_path)
-
-    selected_epoch = 12
-
-    # Logger
+    
     data_root = args.data_root
-    test_logger_path = os.path.join(data_root, args.test_log)
+    save_root = args.save_root
+    
+    # Logger 
+    log_path = os.path.join(args.save_root, args.log_path, args.arch)
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+    test_logger_path = os.path.join(log_path, args.test_log) 
     logger = create_logger(test_logger_path)
     logger.info(args)
-    # Writer
-
     assert args.classes > 1
-    logger.info("=> creating model ...")
+    
     logger.info("Classes: {}".format(args.classes))
 
-    random.seed(123)
-    np.random.seed(123)
+    # Writer
+    writer_path = os.path.join(args.save_root, args.writer_path, args.arch)
+    test_writer_path = os.path.join(writer_path, args.test_tensorboard_path)
+    if os.path.exists(test_writer_path):  # delete old one
+        shutil.rmtree(test_writer_path)
+        os.makedirs(test_writer_path)
+    writer = SummaryWriter(log_dir=test_writer_path)
 
-    # Model architecture
-    if args.arch == 'pointNN':
-        from model.pointNN import NN as Model
+    # Predict result
+    pcd_save_root = os.path.join(args.save_root, args.pcd_save_path, args.arch)
+    if not os.path.exists(pcd_save_root):
+        os.makedirs(pcd_save_root)
+        
+    # Device 
+    os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(str(x) for x in args.test_gpu)    
+    if args.cuda: 
+        device = torch.device("cuda")
+        import torch.backends.cudnn as cudnn 
     else:
-        raise Exception('architecture not supported yet'.format(args.arch))
+        device = torch.device("cpu")
+      
+    # Init
+    if args.manual_seed is not None:     
+        manual_seed = args.manual_seed
+        if device == torch.device("cuda"):
+            cudnn.benchmark = False
+            cudnn.deterministic = True
+            torch.cuda.manual_seed_all(manual_seed)
+        random.seed(manual_seed)
+        np.random.seed(manual_seed)
+        torch.manual_seed(manual_seed)
+        
+    # Model architecture
+    arch = args.arch
+    if arch == 'pointNN':
+        from model.pointNN import NN as Model
+    elif arch == 'pointNN_graph':
+        from model.pointNN_graph import NN as Model 
+    else:
+        raise Exception('Architecture {} NOT supported'.format(args.arch))
 
-    model = Model(in_dim=9, hidden_dim=64, out_dim=13).cuda()
-    logger.info('model: \n'.format(model))
+    logger.info("=> Creating model ...")
+    model = Model(in_dim=args.feature_dim, hidden_dim=64, out_dim=args.classes)
+    logger.info('model: \n'.format(str(model)))
+    
+    criterion = nn.CrossEntropyLoss(ignore_index=args.ignore_label)
 
-    criterion = nn.CrossEntropyLoss(ignore_index=args.ignore_label).cuda()
-    names = [line.rstrip('\n') for line in open(os.path.join(args.data_root, args.names_path))]  # part names
-
+    # To Device 
+    if device == torch.device("cuda"):
+        model = nn.DataParallel(model)
+        # model = model.cuda()
+        criterion = criterion.cuda()
+        logger.info("Let's use {} GPU!".format(torch.cuda.device_count()))
+         
     # Checkpoints
-    if args.model_path:  # default=None
-        # Load selected epoch weight
-        model_root_path = os.path.join(data_root, args.save_path, args.model_path)
-        model_path_list = os.listdir(model_root_path)
-        model_path = os.path.join(data_root, args.model_root_path, [p for p in model_path_list if 'train_epoch_{}'.format(selected_epoch) in p][0])
-        if os.path.isfile(model_path):
-            logger.info("=> loading weight '{}'".format(model_path))
-            checkpoint = torch.load(model_path)
-            model.load_state_dict(checkpoint['state_dict'])
-            logger.info("=> loaded weight '{}'".format(model_path))
-        else:
-            logger.info("=> no weight found at '{}'".format(model_path))
-            raise KeyError
-    else:  # return if the weights are not given
+    checkpoints_path = os.path.join(args.save_root, args.checkpoints_path, args.arch)
+    # Load selected epoch weight
+    model_path_list = os.listdir(checkpoints_path)
+    model_path = os.path.join(checkpoints_path, [p for p in model_path_list if 'train_epoch_{}'.format(args.selected_epoch) in p][0])
+    if os.path.isfile(model_path):
+        logger.info("=> loading weight '{}'".format(model_path))
+        checkpoint = torch.load(model_path)
+        model.load_state_dict(checkpoint['state_dict'])
+        logger.info("=> loaded weight '{}'".format(model_path))
+    else:
+        logger.info("=> no weight found at '{}'".format(model_path))
         raise KeyError
 
-    test(model, criterion, names)
+    test(model, criterion, writer=writer, args=args)

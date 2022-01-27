@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 """
 PointNet2
-和s3dis差不多
+和s3dis一样【差一个label weight】
 """
 
 

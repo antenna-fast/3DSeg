@@ -33,7 +33,7 @@ class AverageMeter(object):
 
 def intersectionAndUnion(output, target, K, ignore_index=255):
     """
-    :param output: Model inference result after argmax
+    :param output: Model inference result after argmax" Numpy format
     :param target: Label of each point
     :param K: Class number
     :param ignore_index: Default is 255
@@ -43,10 +43,9 @@ def intersectionAndUnion(output, target, K, ignore_index=255):
     # each value in range 0 to K - 1.
     assert (output.ndim in [1, 2, 3])
     assert output.shape == target.shape
-    # output = output.reshape(output.size).copy()
-    target = target.reshape(target.size)
-    output = output.copy()
-    target = target.copy()
+    output = output.reshape(output.size).copy()  # why?
+    target = target.reshape(target.size).copy()
+    # output = output.copy()
     output[np.where(target == ignore_index)[0]] = ignore_index  # Set the ignore_index is equal in both target and output
     intersection_idx = np.where(output == target)[0]
     intersection = output[intersection_idx]  # Intersection points' label(TP + TN)

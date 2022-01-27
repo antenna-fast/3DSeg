@@ -1,0 +1,66 @@
+DATA:
+  data_name: s3dis
+  # local macbook
+  # data_root: /Users/aibee/Downloads/Paper/Point Cloud/3D Semantic Segmentation/Dataset/s3dis
+  # office
+  data_root: /data0/texture_data/yaohualiu/PublicDataset/s3dis
+  train_list: list/train12346.txt
+  train_full_folder: trainval_fullarea
+  val_list: list/val5.txt
+  test_area: 5
+  classes: 13
+  feature_dim: 6  # point feature dimension: centered xyz + rgb + normalized points
+  block_size: 1.0
+  stride_rate: 0.5
+  sample_rate: 1.0
+  num_point: 10000  # point number [default: 4096] 
+  is_restart: 0  # Delete old checkpoints
+  # Add from transformer
+  # voxel_size: 0.04
+  # voxel_max: 80000  # number of grids
+  voxel_size: 0
+  voxel_max: 0  # number of grids
+  cuda: True
+  save_root: /data0/texture_data/yaohualiu/PublicDataset/s3dis/results
+  checkpoints_path: checkpoints  # All the output file: checkpoints\log\writer
+  log_path: log
+  writer_path: writer
+
+TRAIN:
+  arch: pointNN_graph
+  use_xyz: True
+  sync_bn: True  # adopt sync_bn or not
+  ignore_label: 255
+  train_gpu: [1]
+  train_workers: 1  # data loader workers
+  train_batch_size: 1  # batch size for training
+  train_batch_size_val: 1  # batch size for validation during training, memory and speed tradeoff
+  base_lr: 0.0005
+  epochs: 100
+  start_epoch: 0
+  step_epoch: 20
+  multiplier: 0.5
+  momentum: 0.9
+  weight_decay: 0.0001
+  manual_seed: 123
+  print_freq: 100  # log per 10 batch
+  save_freq: 1
+  weight:  # path to initial weight (default: none)
+  resume: # path to latest checkpoint (default: none)
+  evaluate: True  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend
+  train_log: train.log
+  train_tensorboard_path: tb_train
+
+TEST:
+  test_list: list/val5.txt
+  test_list_full: list/val5_full.txt
+  split: val  # split in [train, val and test]
+  test_gpu: [1]
+  test_workers: 1
+  test_batch_size: 1
+  selected_epoch: 1
+  names_path: list/s3dis_names.txt
+  test_log: test.log
+  test_tensorboard_path: tb_test
+  pcd_save_path: pred_pcd
+  is_vis: 0

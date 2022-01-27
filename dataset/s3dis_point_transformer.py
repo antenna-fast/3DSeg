@@ -6,8 +6,7 @@ import SharedArray as SA
 from torch.utils.data import Dataset
 
 sys.path.insert(0, os.getcwd()+'/..')
-from util.data_util import sa_create
-from util.data_util import data_prepare
+from util.data_util import sa_create, data_prepare
 
 
 class S3DIS(Dataset):

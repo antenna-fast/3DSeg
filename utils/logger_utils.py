@@ -45,16 +45,5 @@ def create_logger(log_file_path='default_name.log', log_level='INFO', write_mode
     return logger
 
 
-# def get_logger():
-#     logger_name = "main-logger"
-#     logger = logging.getLogger(logger_name)
-#     logger.setLevel(logging.INFO)
-#     handler = logging.StreamHandler()
-#     fmt = "[%(asctime)s %(levelname)s %(filename)s line %(lineno)d %(process)d] %(message)s"
-#     handler.setFormatter(logging.Formatter(fmt))
-#     logger.addHandler(handler)
-#     return logger
-
-
 if __name__ == '__main__':
-    print()
+    print('Logger test ... ')

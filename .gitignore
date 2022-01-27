@@ -1,0 +1,6 @@
+__pycache__
+writer
+back
+log/train.log
+*.pyc
+.DS_Store

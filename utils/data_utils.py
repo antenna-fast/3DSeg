@@ -57,7 +57,7 @@ def data_prepare(room_path, args):
 
 
 def data_load(data_path, args):
-    data = np.load(data_path)  # xyz/rgb/l, N*7
+    data = np.load(data_path)  # xyz rgb l, N*7
     coord, feat, label = data[:, :3], data[:, 3:6], data[:, 6]  # xyz, rgb, label
 
     idx_data = []
@@ -75,7 +75,7 @@ def data_load(data_path, args):
     return coord, feat, label, idx_data
 
 
-# get data list
+# load Test data
 def get_data_list(args):
     if args.data_name == 's3dis':
         data_list = sorted(os.listdir(os.path.join(args.data_root, args.train_full_folder)))
@@ -95,4 +95,4 @@ def input_normalize(coord, feat):
 
 
 if __name__ == '__main__':
-    print('unit test code')
+    print('Unit test code ...')
