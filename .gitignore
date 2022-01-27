@@ -1,6 +1,7 @@
 __pycache__
-writer
 back
-log/train.log
+writer
+log
+show_inference/pred_pcd
 *.pyc
 .DS_Store

@@ -4,13 +4,25 @@ Date: 2022/1/26
 E-mail: aliuyaohua@gmail.com
 
 Description:
-
+Loss Functions
 """
 
 import torch
 import torch.nn as nn
 
 
+# FocalLoss
+class FocalLoss(nn.Module):
+    def __init__(self):
+        super(FocalLoss, self).__init__()
+        a = 0
+
+    def forward(self):
+        b = 0
+        return 0
+
+
+# DiceLoss
 class DiceLoss(nn.Module):
     def __init__(self):
         super(DiceLoss, self).__init__()

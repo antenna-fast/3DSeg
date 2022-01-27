@@ -57,7 +57,7 @@ TEST:
   test_gpu: [1]
   test_workers: 1
   test_batch_size: 1
-  selected_epoch: 42
+  selected_epoch: 63
   names_path: list/s3dis_names.txt
   test_log: test.log
   test_tensorboard_path: tb_test

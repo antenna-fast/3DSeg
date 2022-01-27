@@ -36,7 +36,7 @@ def shared_view(pcd_list, win_name=['1', '2']):
 
 if __name__ == '__main__':
     method = 'pointNN_graph_position_20_color_norm'
-    scene = 1
+    scene = 2
     pred_pcd_path = 'pred_pcd/{}/{}_scene_{}.ply'.format(method, 'pred', scene)
     pred_pcd = o3d.io.read_point_cloud(pred_pcd_path)
 
