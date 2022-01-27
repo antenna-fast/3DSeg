@@ -5,3 +5,4 @@ log
 show_inference/pred_pcd
 *.pyc
 .DS_Store
+.gitignore
