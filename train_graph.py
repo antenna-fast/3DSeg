@@ -18,15 +18,13 @@ import torch.nn as nn
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
 
-# from dataset.s3dis import S3DIS  # dataset
-from dataset.s3dis_short import S3DIS  # dataset
-# from model.pointNN_graph import NN as Model  # networks
+from dataset.s3dis_short_knn import S3DIS  # dataset
 
 from utils.metric_utils import AverageMeter, intersectionAndUnionGPU
 from utils.metric_utils import AverageMeter, intersectionAndUnion
 from utils.logger_utils import create_logger
 from utils.config import get_parser
-from utils import transform
+from utils import data_transform
 
 
 def train_one_epoch(model, train_loader, criteration, optimizer, epoch, logger, writer, device, args):
@@ -161,7 +159,7 @@ if __name__ == '__main__':
     # Dataset
     data_root = args.data_root
     # Dataset: train
-    train_transform = transform.Compose([transform.ToTensor()])
+    train_transform = data_transform.Compose([transform.ToTensor()])
     train_data = S3DIS(split='train', data_root=os.path.join(data_root, args.train_full_folder),
                        num_point=args.num_point, test_area=args.test_area, block_size=args.block_size,
                        sample_rate=args.sample_rate, transform=train_transform, logger=logger)

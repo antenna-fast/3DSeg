@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 import open3d as o3d
 
 
@@ -7,6 +9,9 @@ def show_pointcloud(pcd_path, win_name='ANTenna3D'):
     pcd = o3d.io.read_point_cloud(pcd_path)
     print('points: ', len(pcd.points))
     print('colors: ', len(pcd.colors))
+
+    points_np = np.array(pcd.points)
+    colors_np = np.array(pcd.colors)
     o3d.visualization.draw_geometries([pcd], window_name=win_name)
 
 

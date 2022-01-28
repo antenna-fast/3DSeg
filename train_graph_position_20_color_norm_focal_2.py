@@ -18,12 +18,9 @@ import torch.nn as nn
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
 
-# from dataset.s3dis import S3DIS  # dataset
-from dataset.s3dis_short import S3DIS  # dataset
-from model.pointNN import NN as Model  # networks
+from dataset.s3dis_short_knn import S3DIS  # dataset
 
 from utils.metric_utils import AverageMeter, intersectionAndUnionGPU
-from utils.metric_utils import AverageMeter, intersectionAndUnion
 from utils.logger_utils import create_logger
 from utils.config import get_parser
 from utils import transform
@@ -44,11 +41,7 @@ def train_one_epoch(model, train_loader, criteration, optimizer, epoch, logger, 
     epoch_loss = 0
     for i, data in enumerate(train_loader):
         batch_start_time = time.time()
-        x, target = data
-        
-        # To Device
-        if device == 'gpu':
-            x, target = x.to('cuda'), target.to('cuda')
+        x, target = data[0].to(device), data[1].to(device)
 
         # Forward -> loss -> backward -> optimize
         optimizer.zero_grad()
@@ -116,20 +109,20 @@ def train_one_epoch(model, train_loader, criteration, optimizer, epoch, logger, 
 
 if __name__ == '__main__':
     # Load Config
-    config_file_path = 'config/s3dis/s3dis_antenna.yaml'  # YAML config file
+    config_file_path = 'config/s3dis/s3dis_antenna_graph_position_20_color_norm_focal_2.yaml'  # YAML config file
     args = get_parser(desc='ANTenna3DSeg', config_file=config_file_path)
     
-    # Device 
+    # Device
     os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(str(x) for x in args.train_gpu)    
-    if torch.cuda.is_available():
-        device = 'gpu'
-        import torch.backends.cudnn as cudnn
+    if args.cuda:
+        device = torch.device("cuda")
+        import torch.backends.cudnn as cudnn 
     else:
-        device = 'cpu'    
-    
+        device = torch.device("cpu")
+
     # Init
     if args.manual_seed is not None:
-        if device == 'gpu':
+        if device == torch.device("cuda"):
             cudnn.benchmark = False
             cudnn.deterministic = True
             torch.cuda.manual_seed_all(args.manual_seed)
@@ -140,20 +133,21 @@ if __name__ == '__main__':
         args.sync_bn = False
 
     # Logger
-    log_root = args.log_root 
-    train_logger_path = os.path.join(log_root, args.train_log)
-    ckpt_path = '/'.join(train_logger_path.split('/')[:-1])
-    if not os.path.exists(ckpt_path):
-        os.makedirs(ckpt_path)
+    log_path = os.path.join(args.save_root, args.log_path, args.arch)
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+    train_logger_path = os.path.join(log_path, args.train_log)
     logger = create_logger(train_logger_path, write_mode='w')
     logger.info(args)
 
     # Writer
-    writer_root = args.writer_root
-    train_writer_path = os.path.join(writer_root, args.train_tensorboard_path)
-    if os.path.exists(train_writer_path):  # delete ole one
-        shutil.rmtree(train_writer_path)
-        os.makedirs(train_writer_path)
+    writer_path = os.path.join(args.save_root, args.writer_path, args.arch)
+    if os.path.exists(writer_path):  # delete ole one
+        shutil.rmtree(writer_path)
+        os.makedirs(writer_path)
+    else: 
+        os.makedirs(writer_path)
+    train_writer_path = os.path.join(writer_path, args.train_tensorboard_path)
     writer = SummaryWriter(train_writer_path)
 
     # launch tensorboard in-code
@@ -163,31 +157,52 @@ if __name__ == '__main__':
     data_root = args.data_root
     # Dataset: train
     train_transform = transform.Compose([transform.ToTensor()])
-    train_data = S3DIS(split='train', data_root=os.path.join(data_root, args.train_full_folder),
-                       num_point=args.num_point, test_area=args.test_area, block_size=args.block_size,
-                       sample_rate=args.sample_rate, transform=train_transform, logger=logger)
+    train_data = S3DIS(split='train', data_root=os.path.join(data_root, args.train_full_folder), num_point=args.num_point,
+                       test_area=args.test_area, sample_rate=args.sample_rate, transform=train_transform, logger=logger)
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.train_batch_size, shuffle=True,
                                                num_workers=args.train_workers, pin_memory=True)
-
     # Dataset: val/test
 
     # Model
-    # model = Model(in_dim=9, hidden_dim=64, out_dim=13)
-    model = Model(in_dim=6, hidden_dim=64, out_dim=13)
-    # Model parameter init
+    arch = args.arch
+    if arch == 'pointNN_graph':
+        from model.pointNN_graph import NN as Model
+    elif arch == 'pointNN':
+        from model.pointNN import NN as Model
+    elif arch == 'pointNN_graph_position':
+        from model.pointNN_graph_position import NN as Model
+    elif arch == 'pointNN_graph_position_20':
+        from model.pointNN_graph_position_20 import NN as Model
+    elif arch == 'pointNN_graph_position_20_color_norm':
+        from model.pointNN_graph_position_20_color_norm import NN as Model
+    elif arch == 'pointNN_graph_position_20_color_norm_focal_2':
+        from model.pointNN_graph_position_20_color_norm import NN as Model
+    else:
+        raise Exception("Architecture {} NOT implemented!".format(arch))
+    model = Model(in_dim=args.feature_dim, hidden_dim=64, out_dim=args.classes)
 
-    criterion = nn.CrossEntropyLoss()
+    loss_function = args.loss_function
+    if loss_function == 'CE':
+        criterion = nn.CrossEntropyLoss()
+    elif loss_function == 'FocalLoss':
+        from model.losses import FocalLoss
+        criterion = FocalLoss(gamma=args.focal_gamma)
+    else:
+        raise Exception('Loss Function {} NOT implemented!'.format(loss_function))
+
     optimizer = torch.optim.SGD(model.parameters(), lr=args.base_lr, momentum=args.momentum, weight_decay=args.weight_decay)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=args.step_epoch, gamma=args.multiplier)
 
     # To Device
-    if device == 'gpu':
-        model.cuda()
+    if device == torch.device("cuda"):
+        model = nn.DataParallel(model)
         criterion.cuda()
-
-    # Load Checkpoint weight only
+        logger.info("Let's use {} GPU!".format(torch.cuda.device_count()))
+    
+    # Checkpoints path
+    checkpoints_path = os.path.join(args.save_root, args.checkpoints_path, args.arch)
     if args.weight:  # default=None
-        weight_path = os.path.join(data_root, args.save_path, args.weight)
+        weight_path = os.path.join(checkpoints_path, args.weight)
         if os.path.isfile(weight_path):
             logger.info("=> loading weight '{}'".format(weight_path))
             checkpoint = torch.load(weight_path)
@@ -195,9 +210,11 @@ if __name__ == '__main__':
             logger.info("=> loaded weight '{}'".format(weight_path))
         else:
             logger.info("=> no weight found at '{}'".format(weight_path))
+    # else init Model parameter manually
+
     # Load Checkpoint
     if args.resume:
-        resume_path = os.path.join(data_root, args.save_path, args.resume)
+        resume_path = os.path.join(checkpoints_path, args.resume)
         if os.path.isfile(resume_path):
             logger.info("=> loading checkpoint '{}'".format(resume_path))
             checkpoint = torch.load(resume_path, map_location=lambda storage, loc: storage.cuda())
@@ -208,15 +225,14 @@ if __name__ == '__main__':
             logger.info("=> loaded checkpoint '{}' (epoch {})".format(resume_path, checkpoint['epoch']))
         else:
             logger.info("=> no checkpoint found at '{}'".format(resume_path))
-    else:  # if Resume not given
-        checkpoint_path = os.path.join(data_root, args.save_path)
+    else:  # if checkpoint not given
         if args.is_restart:  # Delete the old checkpoints
-            shutil.rmtree(checkpoint_path)
-        if not os.path.exists(checkpoint_path):
-            os.makedirs(checkpoint_path)
+            if os.path.exists(checkpoints_path):
+                shutil.rmtree(checkpoints_path)
+            if not os.path.exists(checkpoints_path):
+                os.makedirs(checkpoints_path)
          
     # Train All Epoch
-    save_path = os.path.join(data_root, args.save_path)
     for epoch in range(args.start_epoch, args.epochs):
         # Train One Epoch
         epoch_loss = train_one_epoch(model=model, train_loader=train_loader, criteration=criterion, optimizer=optimizer,
@@ -226,7 +242,7 @@ if __name__ == '__main__':
 
         # Save Checkpoints
         if epoch_log % args.save_freq == 0:  
-            filename = '{}/train_epoch_{}_loss_{:.3f}.pth'.format(save_path, epoch_log, epoch_loss)
+            filename = '{}/train_epoch_{}_loss_{:.3f}.pth'.format(checkpoints_path, epoch_log, epoch_loss)
             logger.info('Saving checkpoint to: {}'.format(filename))
             torch.save({'epoch': epoch_log,
                         'state_dict': model.state_dict(),

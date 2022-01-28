@@ -10,8 +10,6 @@ import sys
 import time
 import random
 import numpy as np
-# import pickle
-# import collections
 import shutil
 
 import torch
@@ -28,7 +26,6 @@ from utils.config import get_parser
 from utils.data_utils import get_data_list, input_normalize, data_load
 
 from utils.vis_utils import show_inference
-import matplotlib.pyplot as plt
 from matplotlib import cm
 
 color_map = cm.get_cmap('tab20').colors
@@ -156,9 +153,9 @@ def test(model, criterion, writer, args=0):
     # allAcc = sum(intersection) / (sum(target) + 1e-10)
 
     # Class Level Metric Log
-    # for i in range(args.classes):
-    #     logger.info('Class_{} | Name: {} | Result: IoU:{:.4f} | Accuracy:{:.4f}.'.
-    #                 format(i, names[i], iou_class[i], accuracy_class[i]))
+    for i in range(args.classes):
+        logger.info('Class_{} | Name: {} | Result: IoU:{:.4f} | Accuracy:{:.4f}.'.
+                    format(i, names[i], iou_class[i], accuracy_class[i]))
 
     # Overall Metric Log
     # logger.info('Val0 result: mIoU:{:.4f} | mAcc:{:.4f} | allAcc:{:.4f}.'.format(mIoU, mAcc, allAcc))

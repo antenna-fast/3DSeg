@@ -10,7 +10,9 @@ def show_pointcloud(pcd_path, win_name='ANTenna3D'):
     o3d.visualization.draw_geometries([pcd], window_name=win_name)
 
 
-def shared_view(pcd_list, win_name=['1', '2']):
+def shared_view(pcd_list, win_name=None):
+    if win_name is None:
+        win_name = ['1', '2']
     vis = o3d.visualization.Visualizer()
     vis.create_window(window_name=win_name[0], width=960, height=540, left=0, top=0)
     vis.add_geometry(pcd_list[0])

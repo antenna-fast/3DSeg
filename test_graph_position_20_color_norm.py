@@ -10,8 +10,6 @@ import sys
 import time
 import random
 import numpy as np
-# import pickle
-# import collections
 import shutil
 
 import torch
@@ -28,7 +26,6 @@ from utils.config import get_parser
 from utils.data_utils import get_data_list, input_normalize, data_load
 
 from utils.vis_utils import show_inference
-import matplotlib.pyplot as plt
 from matplotlib import cm
 
 color_map = cm.get_cmap('tab20').colors
@@ -47,7 +44,6 @@ def test(model, criterion, writer, args=0):
 
     model.eval()
 
-    # check_makedirs(args.save_folder)
     pred_save, label_save = [], []
     data_list = get_data_list(args)  # get test data list
     num_data_list = len(data_list)
@@ -66,7 +62,8 @@ def test(model, criterion, writer, args=0):
         point_idxs = np.arange(num_points)
 
         # sample
-        sample_num = 10000
+        # sample_num = 10000
+        sample_num = num_points  # use all points
         selected_point_idxs = np.random.choice(point_idxs, sample_num, replace=False)
         coord = torch.tensor(coord[selected_point_idxs])
         feat = torch.tensor(feat[selected_point_idxs])
@@ -156,9 +153,9 @@ def test(model, criterion, writer, args=0):
     # allAcc = sum(intersection) / (sum(target) + 1e-10)
 
     # Class Level Metric Log
-    # for i in range(args.classes):
-    #     logger.info('Class_{} | Name: {} | Result: IoU:{:.4f} | Accuracy:{:.4f}.'.
-    #                 format(i, names[i], iou_class[i], accuracy_class[i]))
+    for i in range(args.classes):
+        logger.info('Class_{} | Name: {} | Result: IoU:{:.4f} | Accuracy:{:.4f}.'.
+                    format(i, names[i], iou_class[i], accuracy_class[i]))
 
     # Overall Metric Log
     # logger.info('Val0 result: mIoU:{:.4f} | mAcc:{:.4f} | allAcc:{:.4f}.'.format(mIoU, mAcc, allAcc))

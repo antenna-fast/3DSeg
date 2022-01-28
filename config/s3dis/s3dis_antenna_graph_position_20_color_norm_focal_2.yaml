@@ -5,27 +5,33 @@ DATA:
   val_list: list/val5.txt
   classes: 13
   feature_dim: 6  # point feature dimension: centered xyz + rgb + normalized points
-#  block_size: 1.0
+ #  block_size: 1.0
   stride_rate: 0.5
   sample_rate: 1.0
   num_point: 10000  # sample point number
+  # Add from transformer
   voxel_size: 0
   voxel_max: 0  # number of grids
   cuda: True
-  save_root: /data0/texture_data/yaohualiu/PublicDataset/s3dis/results # All the output file: checkpoints\log\writer
+  save_root: /data0/texture_data/yaohualiu/PublicDataset/s3dis/results  # All the output file
   checkpoints_path: checkpoints
   log_path: log
   writer_path: writer
+
+MODEL:
+  arch: pointNN_graph_position_20_color_norm_focal_2
   knn: 20
+  loss_function: FocalLoss
+  focal_gamma: 2
+  optimizer: SGD
 
 TRAIN:
   is_restart: 1  # Delete old checkpoints
-  arch: pointNN_graph_position_20_color_norm
   train_list: list/train12346.txt  # train data
   use_xyz: True
   sync_bn: True  # adopt sync_bn or not
   ignore_label: 255
-  train_gpu: [0]
+  train_gpu: [1]
   train_workers: 1  # data loader workers
   train_batch_size: 1  # batch size for training
   train_batch_size_val: 1  # batch size for validation during training, memory and speed tradeoff
@@ -37,7 +43,7 @@ TRAIN:
   momentum: 0.9
   weight_decay: 0.0001
   manual_seed: 123
-  print_freq: 100
+  print_freq: 100  # log per 10 batch
   save_freq: 1
   weight:  # path to initial weight (default: none)
   resume: # path to latest checkpoint (default: none)
@@ -46,18 +52,18 @@ TRAIN:
   train_tensorboard_path: tb_train
 
 TEST:
-#  test_area: 1
+  test_area: 1
 #  test_area: 3
-  test_area: 5
+#  test_area: 5
   test_list: list/val5.txt
   test_list_full: list/val5_full.txt
   split: val  # split in [train, val and test]
   test_gpu: [1]
   test_workers: 1
   test_batch_size: 1
-  selected_epoch: 75
+  selected_epoch: 63
   names_path: list/s3dis_names.txt
   test_log: test.log
   test_tensorboard_path: tb_test
   pcd_save_path: pred_pcd
-  is_vis: 0
+  is_vis: 1

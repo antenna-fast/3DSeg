@@ -3,6 +3,7 @@ from point transformer
 Simplified by ANTenna
 
 Test: 3D Semantic Segmentation
+split point cloud to parts -> inference -> merge result
 """
 
 import os
@@ -10,8 +11,6 @@ import sys
 import time
 import random
 import numpy as np
-# import pickle
-# import collections
 import shutil
 
 import torch
@@ -26,9 +25,8 @@ from utils.metric_utils import AverageMeter, intersectionAndUnion
 from utils.logger_utils import create_logger
 from utils.config import get_parser
 from utils.data_utils import get_data_list, input_normalize, data_load
-
 from utils.vis_utils import show_inference
-import matplotlib.pyplot as plt
+
 from matplotlib import cm
 color_map = cm.get_cmap('tab20').colors
 
@@ -172,41 +170,41 @@ def test(model, criterion, writer, args=0):
             show_inference(coord, color_pred_np, is_show=0, is_save=1, is_norm=1, save_path=os.path.join(pcd_save_root, 'pred_scene_{}.ply'.format(idx)))
             show_inference(coord, color_gt_np, is_show=0, is_save=1, is_norm=1, save_path=os.path.join(pcd_save_root, 'gt_scene_{}.ply'.format(idx))) 
 
-        # Save all scenes' prediction results
-        # with open(os.path.join(args.save_folder, "pred.pickle"), 'wb') as handle:
-        #     pickle.dump({'pred': pred_save}, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        # with open(os.path.join(args.save_folder, "label.pickle"), 'wb') as handle:
-        #     pickle.dump({'label': label_save}, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # Save all scenes' prediction results
+    # with open(os.path.join(args.save_folder, "pred.pickle"), 'wb') as handle:
+    #     pickle.dump({'pred': pred_save}, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # with open(os.path.join(args.save_folder, "label.pickle"), 'wb') as handle:
+    #     pickle.dump({'label': label_save}, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-        # Overall Metric
-        # Calculation 1  
-        # Class Level 
-        iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
-        accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
-        # Overall mean
-        mIoU1 = np.mean(iou_class)
-        mAcc1 = np.mean(accuracy_class)
-        allAcc1 = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
+    # Overall Metric
+    # Calculation 1
+    # Class Level
+    iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
+    accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
+    # Overall mean
+    mIoU1 = np.mean(iou_class)
+    mAcc1 = np.mean(accuracy_class)
+    allAcc1 = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
 
-        # Calculation 2  Overall Test set 
-        # # Class Level 
-        # intersection, union, target = intersectionAndUnion(np.concatenate(pred_save), np.concatenate(label_save), args.classes, args.ignore_label)
-        # iou_class = intersection / (union + 1e-10)
-        # accuracy_class = intersection / (target + 1e-10)
-        # # Overall mean
-        # mIoU = np.mean(iou_class)
-        # mAcc = np.mean(accuracy_class)
-        # allAcc = sum(intersection) / (sum(target) + 1e-10)
-        
-        # Class Level Metric Log
-        for i in range(args.classes):
-            logger.info('Class_{} | Name: {} | Result: IoU:{:.4f} | Accuracy:{:.4f}.'.
-                        format(i, names[i], iou_class[i], accuracy_class[i]))
+    # Calculation 2  Overall Test set
+    # # Class Level
+    # intersection, union, target = intersectionAndUnion(np.concatenate(pred_save), np.concatenate(label_save), args.classes, args.ignore_label)
+    # iou_class = intersection / (union + 1e-10)
+    # accuracy_class = intersection / (target + 1e-10)
+    # # Overall mean
+    # mIoU = np.mean(iou_class)
+    # mAcc = np.mean(accuracy_class)
+    # allAcc = sum(intersection) / (sum(target) + 1e-10)
 
-        # Overall Metric Log
-        # logger.info('Val0 result: mIoU:{:.4f} | mAcc:{:.4f} | allAcc:{:.4f}.'.format(mIoU, mAcc, allAcc))
-        logger.info('Val1 result: mIoU:{:.4f} | mAcc:{:.4f} | allAcc:{:.4f}.'.format(mIoU1, mAcc1, allAcc1))
-        logger.info('<<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<')
+    # Class Level Metric Log
+    for i in range(args.classes):
+        logger.info('Class_{} | Name: {} | Result: IoU:{:.4f} | Accuracy:{:.4f}.'.
+                    format(i, names[i], iou_class[i], accuracy_class[i]))
+
+    # Overall Metric Log
+    # logger.info('Val0 result: mIoU:{:.4f} | mAcc:{:.4f} | allAcc:{:.4f}.'.format(mIoU, mAcc, allAcc))
+    logger.info('Val1 result: mIoU:{:.4f} | mAcc:{:.4f} | allAcc:{:.4f}.'.format(mIoU1, mAcc1, allAcc1))
+    logger.info('<<<<<<<<<<<<<<<<< End Evaluation <<<<<<<<<<<<<<<<<')
 
 
 if __name__ == '__main__':

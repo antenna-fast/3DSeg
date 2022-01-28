@@ -3,6 +3,6 @@ back
 writer
 log
 show_inference/pred_pcd
-*.pyc
+**/*.pyc
 .DS_Store
 .gitignore

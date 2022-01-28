@@ -18,7 +18,6 @@ import torch.nn as nn
 import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
 
-# from dataset.s3dis import S3DIS  # dataset
 from dataset.s3dis_short_knn import S3DIS  # dataset
 
 from utils.metric_utils import AverageMeter, intersectionAndUnionGPU
@@ -115,8 +114,7 @@ if __name__ == '__main__':
     
     # Device
     os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(str(x) for x in args.train_gpu)    
-    # if torch.cuda.is_available():
-    if args.cuda: 
+    if args.cuda:
         device = torch.device("cuda")
         import torch.backends.cudnn as cudnn 
     else:

@@ -12,19 +12,6 @@ import time
 import torch
 from torch.utils.data import Dataset
 
-import open3d as o3d
-
-
-def show_points(points_xyzrgb):
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(points_xyzrgb[:, :3])
-    pcd.paint_uniform_color([1, 0.706, 0])
-    # pcd.colors = o3d.utility.Vector3dVector(points_xyzrgb[:, 3:6] / 255)
-    pcd.colors = o3d.utility.Vector3dVector(points_xyzrgb[:, 3:6])
-    print('points: {}'.format(len(pcd.points)))
-    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.005, max_nn=10))
-    o3d.visualization.draw_geometries([pcd])
-
 
 class S3DIS(Dataset):
     def __init__(self, split='train', data_root='trainval_fullarea', num_point=4096,
@@ -114,7 +101,6 @@ class S3DIS(Dataset):
 
 
 if __name__ == '__main__':
-    # data_root = '/mnt/lustre/zhaohengshuang/dataset/s3dis/trainval_fullarea'
     data_root = '/Users/aibee/Downloads/Paper/Point Cloud/Semantic Segmentation/Dataset/s3dis/trainval_fullarea'
 
     # parameters

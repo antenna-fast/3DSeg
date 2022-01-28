@@ -10,9 +10,6 @@ import os
 import sys
 import numpy as np
 
-sys.path.insert(0, os.getcwd() + '/utils')
-from voxelize_utils import voxelize
-
 
 def data_prepare(room_path, args):
     room_data = np.load(room_path)
@@ -71,7 +68,7 @@ def data_load(data_path, args):
             idx_part = idx_sort[idx_select]
             idx_data.append(idx_part)
     else:  # NOT Voxelize
-        idx_data.append(np.arange(label.shape[0]))  # [0, ..., maxPointIdx]
+        idx_data.append(np.arange(label.shape[0]))
     return coord, feat, label, idx_data
 
 
@@ -83,6 +80,7 @@ def get_data_list(args):
         data_list = [item[:-4] for item in data_list if 'Area_{}'.format(args.test_area) in item]
     else:
         raise Exception('dataset not supported yet'.format(args.data_name))
+
     print("Totally {} samples in val set.".format(len(data_list)))
     return data_list
 
@@ -92,6 +90,59 @@ def input_normalize(coord, feat):
     coord -= coord_min  # make sure all points' coordinate > 0
     feat = feat / 255.  # color normalize
     return coord, feat
+
+
+def fnv_hash_vec(arr):
+    """
+    FNV64-1A
+    """
+    assert arr.ndim == 2
+    # Floor first for negative coordinates
+    arr = arr.copy()
+    arr = arr.astype(np.uint64, copy=False)
+    hashed_arr = np.uint64(14695981039346656037) * np.ones(arr.shape[0], dtype=np.uint64)
+    for j in range(arr.shape[1]):
+        hashed_arr *= np.uint64(1099511628211)
+        hashed_arr = np.bitwise_xor(hashed_arr, arr[:, j])
+    return hashed_arr
+
+
+def ravel_hash_vec(arr):
+    """
+    Ravel the coordinates after subtracting the min coordinates.
+    """
+    assert arr.ndim == 2
+    arr = arr.copy()
+    arr -= arr.min(0)
+    arr = arr.astype(np.uint64, copy=False)
+    arr_max = arr.max(0).astype(np.uint64) + 1
+
+    keys = np.zeros(arr.shape[0], dtype=np.uint64)
+    # Fortran style indexing
+    for j in range(arr.shape[1] - 1):
+        keys += arr[:, j]
+        keys *= arr_max[j + 1]
+    keys += arr[:, -1]
+    return keys
+
+
+# Voxelize
+def voxelize(coord, voxel_size=0.05, hash_type='fnv', mode=0):
+    discrete_coord = np.floor(coord / np.array(voxel_size))
+    if hash_type == 'ravel':
+        key = ravel_hash_vec(discrete_coord)
+    else:
+        key = fnv_hash_vec(discrete_coord)
+
+    idx_sort = np.argsort(key)
+    key_sort = key[idx_sort]
+    _, count = np.unique(key_sort, return_counts=True)
+    if mode == 0:  # train mode
+        idx_select = np.cumsum(np.insert(count, 0, 0)[0:-1]) + np.random.randint(0, count.max(), count.size) % count
+        idx_unique = idx_sort[idx_select]
+        return idx_unique
+    else:  # val mode
+        return idx_sort, count
 
 
 if __name__ == '__main__':

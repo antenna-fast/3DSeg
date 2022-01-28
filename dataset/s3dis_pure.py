@@ -3,10 +3,12 @@ PointNet++
 PointWeb
 PAConv
 
-Use different sampling rate, to get multi scale point cloud
+We, do NOT sample!
+We, use FULL data to train and test!
 """
 
 import os
+import sys
 import numpy as np
 import random
 import time
@@ -15,57 +17,39 @@ from torch.utils.data import Dataset
 
 
 class S3DIS(Dataset):
-    def __init__(self, split='train', data_root='trainval_fullarea', num_point=10000,
-                 test_area=5, sample_list=[], transform=None, logger=None):
+    def __init__(self, split='train', data_root='trainval_fullarea', num_point=None,
+                 test_area=5, block_size=1.0, sample_rate=1.0, transform=None, logger=None):
         super().__init__()
-        self.sample_list = sample_list
-        self.logger = logger
-        self.logger.info('S3DIS init ... ')
-        self.num_point = num_point
+        # self.num_point = num_point
+        self.block_size = block_size
         self.transform = transform
-        self.split = split
-        
         rooms = sorted(os.listdir(data_root))
         rooms = [room for room in rooms if 'Area_' in room]
-        if self.split == 'train':
+        if split == 'train':
             rooms_split = [room for room in rooms if not 'Area_{}'.format(test_area) in room]
         else:
             rooms_split = [room for room in rooms if 'Area_{}'.format(test_area) in room]
+
         self.room_points, self.room_labels = [], []
         self.room_coord_min, self.room_coord_max = [], []
         num_point_all = []
         for room_name in rooms_split:  # For each room
             room_path = os.path.join(data_root, room_name)
-            room_data = np.load(room_path)  # xyzrgb, label, N*7  # TODO: move to get_item
+            room_data = np.load(room_path)  # xyzrgb, label, N*7
             points, labels = room_data[:, 0:6], room_data[:, 6]  # N*6: xyz rgb; N,: label
-            coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
-            self.room_points.append(points)
+            self.room_points.append(points)  # 缓存了所有的点！xyz rgb
             self.room_labels.append(labels)
+            # Bbox corner
+            coord_min, coord_max = np.amin(points, axis=0)[:3], np.amax(points, axis=0)[:3]
             self.room_coord_min.append(coord_min)
-            self.room_coord_max.append(coord_max)  # bbox corner
+            self.room_coord_max.append(coord_max)
             num_point_all.append(labels.size)  # Number of points
-        sample_prob = num_point_all / np.sum(num_point_all)  # NumPoints / points num, ratio of each scene
-        num_iter = int(np.sum(num_point_all) * sample_rate / num_point)
-
-        room_idxs = []
-        for index in range(len(rooms_split)):
-            room_idxs.extend([index] * int(round(sample_prob[index] * num_iter)))
-        self.room_idxs = np.array(room_idxs)
-        logger.info("Totally {} samples in {} set.".format(len(self.room_idxs), split))
 
     def __getitem__(self, idx):
         room_idx = self.room_idxs[idx]
         points = self.room_points[room_idx]  # N * 6
-        labels = self.room_labels[room_idx]  # N, 
-        N_points = points.shape[0]
-
-        # sample
-        point_idxs = np.arange(N_points)
-        if (N_points > self.num_point) and self.split == "train":
-            selected_point_idxs = np.random.choice(point_idxs, self.num_point, replace=False)  # may cause random?
-            points = points[selected_point_idxs]
-            labels = labels[selected_point_idxs]
-        return torch.from_numpy(points).float(), torch.from_numpy(labels).long()
+        labels = self.room_labels[room_idx]  # N
+        return points, labels
 
     def __len__(self):
         return len(self.room_idxs)
@@ -76,9 +60,10 @@ if __name__ == '__main__':
 
     # parameters
     stage = 'train'
-    num_point, test_area, sample_rate = 4096, 5, 0.01
+    num_point, test_area, block_size, sample_rate = 4096, 5, 1.0, 0.01
 
-    point_data = S3DIS(split=stage, data_root=data_root, num_point=num_point, test_area=test_area, transform=None)
+    point_data = S3DIS(split=stage, data_root=data_root, num_point=num_point, test_area=test_area,
+                       block_size=block_size, sample_rate=sample_rate, transform=None)
     print('point data size:', point_data.__len__())
     print('point data 0 shape:', point_data.__getitem__(0)[0].shape)
     print('point label 0 shape:', point_data.__getitem__(0)[1].shape)
