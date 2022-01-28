@@ -159,7 +159,6 @@ def test(model, criterion, writer, args=0):
 if __name__ == '__main__':
     # Load Config
     code_root = '/'.join(os.path.abspath(__file__).split('/')[:-1])
-    # config_file_path = os.path.join(code_root, 'config/s3dis/s3dis_antenna.yaml')  # YAML config file
     config_file_path = os.path.join(code_root, 'config/s3dis/s3dis_antenna_graph.yaml')  # YAML config file
     args = get_parser(desc='ANTenna3DSeg', config_file=config_file_path)
     
