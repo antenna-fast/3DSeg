@@ -14,43 +14,6 @@ import faiss
 import numpy as np
 
 
-# Borrowed from DGCNN
-def knn(x, k):
-    # return: [batch_size, num_points, k]
-    inner = -2 * torch.matmul(x.transpose(2, 1), x)
-    xx = torch.sum(x ** 2, dim=1, keepdim=True)
-    pairwise_distance = -xx - inner - xx.transpose(2, 1)
-    idx = pairwise_distance.topk(k=k, dim=-1)[1]
-    return idx
-
-
-def get_graph_feature(x, k=20, idx=None):
-    # x: [batch, dim, num_points]
-    batch_size = x.size(0)
-    num_points = x.size(2)
-    x = x.view(batch_size, -1, num_points)  # [batch, dim, num_samples]
-
-    # get KNN using input feature (dynanmic)
-    if idx is None:
-        idx = knn(x, k=k)  # (batch_size, num_points, k)  # 每一行，包含k个近邻
-
-    device = torch.device('cuda')
-    # idx_base = torch.arange(0, batch_size, device=device).view(-1, 1, 1) * num_points
-    idx_base = torch.arange(0, batch_size).view(-1, 1, 1) * num_points  # expand dimension
-    idx = idx + idx_base
-    idx = idx.view(-1)  # to 1D idx
-
-    _, num_dims, _ = x.size()  # [batch, feat_dim, num_sample]
-
-    x = x.transpose(2, 1).contiguous()  # [batch, xum_points, dim] 
-    feature = x.view(batch_size * num_points, -1)[idx, :]  # 相同的view方式，根据idx拿出来对应的sample
-    feature = feature.view(batch_size, num_points, k, num_dims)  # 每个point，都带有k个nn sample的features
-    x = x.view(batch_size, num_points, 1, num_dims).repeat(1, 1, k, 1)  # expand dim, and repeat
-
-    feature = torch.cat((feature - x, x), dim=3).permute(0, 3, 1, 2).contiguous()
-    return feature  # [batch, num_point, k, feat_dim]
-
-
 class NN(nn.Module):
     def __init__(self, in_dim, hidden_dim, out_dim):
         super().__init__()
@@ -75,9 +38,6 @@ class NN(nn.Module):
                                         nn.Linear(128, self.hidden_dim), nn.ReLU(),
                                         nn.Linear(self.hidden_dim, self.out_dim),
                                         )
-        # edge feature linear projection
-        # self.edge_projection = nn.Linear(3, 64)
-
         # channel pooling
         self.bn1 = nn.BatchNorm2d(64)
         self.bn2 = nn.BatchNorm2d(64)
