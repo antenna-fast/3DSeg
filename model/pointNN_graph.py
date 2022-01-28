@@ -6,6 +6,7 @@ Description:
 Model for 3D semantic segmentation
 
 Introduce DGCNN for segmentation
+without color information
 """
 
 import torch
@@ -108,9 +109,7 @@ class NN(nn.Module):
         points = x[:, :, 0:3]  # .transpose(2, 1)  # [batch, dim, num_points]
         colors = x[:, :, 3:6]
 
-        # get knn
-        # for batch samples
-        batch_knn_idx = []  # [batch, N, k]
+        # get knn for batch samples
         batch_edge_feature = []
         for sample_idx, p in enumerate(points):
             p = np.array(p.cpu(), dtype=np.float32)
